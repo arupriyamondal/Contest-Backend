@@ -19,6 +19,11 @@ app.listen(PORT, () => {
   console.log(`the port running on ${PORT}`);
 });
 
+
+return res.status(200).json({
+  messsage:"the port is running"
+})
+
 app.use(express.json());
 
 app.use(urlencoded({ extended: true }));
