@@ -5,7 +5,7 @@ import express, { urlencoded } from "express";
 import { dbConnect } from "./dbconnect/dbconnect.js";
 import userRouter from "./routers/user.routes.js";
 import cors from "cors";
-
+import cookiParser from "cookie-parser"
 dbConnect();
 
 const app = express();
@@ -19,6 +19,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookiParser())
 app.use(urlencoded({ extended: true }));
 
 // ✅ Root route (THIS is what you want)
