@@ -1,5 +1,4 @@
-import ApiError from "../utils/apiError.js";
-
+import ApiError from "../utils/apierror.js";
 
 export const isAdmin = (req, res, next) => {
   if (!req.user) {

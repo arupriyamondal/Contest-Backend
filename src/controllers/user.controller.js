@@ -1,8 +1,8 @@
 import { User } from "../models/user.model.js";
-import ApiError from "../utils/apiError.js";
+import ApiError from "../utils/apierror.js";
+
 import ApiResponse from "../utils/apiresponse.js";
 import asyncHandler from "../utils/asynchandler.js";
-
 
 // 🔹 Generate Tokens
 const generateAccessAndRefreshToken = async (userId) => {
@@ -59,7 +59,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   const createdUser = await User.findById(newUser._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken",
   );
 
   return res
@@ -87,11 +87,12 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid credentials");
   }
 
-  const { accessToken, refreshToken } =
-    await generateAccessAndRefreshToken(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id,
+  );
 
   const loggedUser = await User.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken",
   );
 
   const options = {
@@ -104,9 +105,7 @@ const loginUser = asyncHandler(async (req, res) => {
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .json(
-      new ApiResponse(200, { user: loggedUser }, "Login successful")
-    );
+    .json(new ApiResponse(200, { user: loggedUser }, "Login successful"));
 });
 
 // 🔹 LOGOUT USER
@@ -114,10 +113,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
 
   if (refreshToken) {
-    await User.findOneAndUpdate(
-      { refreshToken },
-      { refreshToken: null }
-    );
+    await User.findOneAndUpdate({ refreshToken }, { refreshToken: null });
   }
 
   const options = {
