@@ -6,6 +6,7 @@ import { dbConnect } from "./dbconnect/dbconnect.js";
 import userRouter from "./routers/user.routes.js";
 import cors from "cors";
 import cookiParser from "cookie-parser"
+import errorMiddleware from "./middlewares/error.middle.js";
 dbConnect();
 
 const app = express();
@@ -31,6 +32,7 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/v1/user", userRouter);
+app.use(errorMiddleware)
 
 // Server start
 app.listen(PORT, () => {
