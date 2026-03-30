@@ -176,4 +176,23 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
 });
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+
+// 🔹 GET ALL USERS
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find().select("-password -refreshToken");
+
+  const totalUsers = users.length; // ✅ count users
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        total: totalUsers,
+        users: users,
+      },
+      "All users fetched successfully"
+    )
+  );
+});
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken,getAllUsers };
