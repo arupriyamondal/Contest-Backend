@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: "https://desun-contest-kc-am.netlify.app",
+  origin: "https://contest-koushik-arupriya.vercel.app",
   credentials: true,
 }));
 
