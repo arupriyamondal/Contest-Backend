@@ -1,6 +1,6 @@
 import { User } from "../models/user.model.js";
 import ApiError from "../utils/apierror.js";
-
+import jwt from "jsonwebtoken";
 import ApiResponse from "../utils/apiresponse.js";
 import asyncHandler from "../utils/asynchandler.js";
 
@@ -129,4 +129,51 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "Logout successful"));
 });
 
-export { registerUser, loginUser, logoutUser };
+// 🔹 REFRESH ACCESS TOKEN
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies?.refreshToken ||
+    req.header("Authorization")?.replace("Bearer ", "");
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "Refresh token not found");
+  }
+
+  try {
+    // ✅ Verify refresh token
+    const decoded = jwt.verify(
+      incomingRefreshToken,
+      process.env.JWT_REFRESH_SECRET,
+    );
+
+    const user = await User.findById(decoded?.id);
+    if (!user) {
+      throw new ApiError(401, "Invalid refresh token");
+    }
+
+    // ✅ Match with DB stored refresh token
+    if (incomingRefreshToken !== user.refreshToken) {
+      throw new ApiError(401, "Refresh token is expired or used");
+    }
+
+    // ✅ Generate new tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user._id,
+    );
+
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    };
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(new ApiResponse(200, { accessToken }, "Access token refreshed"));
+  } catch (error) {
+    throw new ApiError(401, "Invalid or expired refresh token");
+  }
+});
+export { registerUser, loginUser, logoutUser, refreshAccessToken };

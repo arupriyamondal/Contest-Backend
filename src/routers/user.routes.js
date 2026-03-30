@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {loginUser,logoutUser,registerUser} from "../controllers/user.controller.js";
+import {loginUser,logoutUser,refreshAccessToken,registerUser} from "../controllers/user.controller.js";
 
 import { verifyJWT } from "../middlewares/verifyJwt.js";
 import { isAdmin } from "../middlewares/isAdmin.js";
@@ -54,4 +54,7 @@ router.get(
   }
 );
 
+
+
+router.get("/generate-access",refreshAccessToken)
 export default router;
