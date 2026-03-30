@@ -225,4 +225,67 @@ const deleteUserById = asyncHandler(async (req, res) => {
 });
 
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken,getAllUsers,getUserById,deleteUserById };
+// 🔹 UPDATE PROFILE (CONTACT / PASSWORD)
+const updateProfile = asyncHandler(async (req, res) => {
+  const userId = req.user?._id; // from verifyJWT middleware
+  const { contact, oldPassword, newPassword } = req.body;
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // ✅ If updating contact
+  if (contact) {
+    if (!/^[0-9]{10}$/.test(contact)) {
+      throw new ApiError(400, "Contact must be exactly 10 digits");
+    }
+
+    // check duplicate contact
+    const existingUser = await User.findOne({ contact });
+    if (existingUser && existingUser._id.toString() !== userId.toString()) {
+      throw new ApiError(409, "Contact already in use");
+    }
+
+    user.contact = contact;
+  }
+
+  // ✅ If updating password
+  if (newPassword) {
+    if (!oldPassword) {
+      throw new ApiError(400, "Old password is required");
+    }
+
+    const isMatch = await user.isPasswordCorrect(oldPassword);
+
+    if (!isMatch) {
+      throw new ApiError(401, "Old password is incorrect");
+    }
+
+    if (newPassword.length < 8) {
+      throw new ApiError(400, "Password must be at least 8 characters");
+    }
+
+    user.password = newPassword;
+  }
+
+  // ❌ Nothing to update
+  if (!contact && !newPassword) {
+    throw new ApiError(400, "Nothing to update");
+  }
+
+  await user.save();
+
+  const updatedUser = await User.findById(userId).select(
+    "-password -refreshToken"
+  );
+
+  return res.status(200).json(
+    new ApiResponse(200, updatedUser, "Profile updated successfully")
+  );
+});
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken,getAllUsers,getUserById,deleteUserById,updateProfile };
+
+

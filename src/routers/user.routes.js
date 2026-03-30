@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {deleteUserById, getAllUsers, getUserById, loginUser,logoutUser,refreshAccessToken,registerUser} from "../controllers/user.controller.js";
+import {deleteUserById, getAllUsers, getUserById, loginUser,logoutUser,refreshAccessToken,registerUser, updateProfile} from "../controllers/user.controller.js";
 
 import { verifyJWT } from "../middlewares/verifyJwt.js";
 import { isAdmin } from "../middlewares/isAdmin.js";
@@ -60,4 +60,5 @@ router.get("/generate-access",refreshAccessToken)
 router.get("/get-all-users",verifyJWT,isAdmin,getAllUsers)
 router.get("/get-user/:id",verifyJWT,isAdmin,getUserById)
 router.delete("/delete-user/:id",verifyJWT,isAdmin,deleteUserById)
+router.put("/update-user",verifyJWT,updateProfile)
 export default router;
