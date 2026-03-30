@@ -208,4 +208,21 @@ const getUserById = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "User fetched successfully"));
 });
-export { registerUser, loginUser, logoutUser, refreshAccessToken,getAllUsers,getUserById };
+
+
+const deleteUserById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const user = await User.findByIdAndDelete(id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "User deleted successfully"));
+});
+
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken,getAllUsers,getUserById,deleteUserById };
