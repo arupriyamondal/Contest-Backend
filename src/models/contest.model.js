@@ -26,12 +26,9 @@ const contestSchema = new Schema(
       enum: ["Upcoming", "On-Going", "Completed"],
       default: "Upcoming",
     },
-    participants: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
+    limit:{
+      type:Number
+    }
   },
   { timestamps: true },
 );

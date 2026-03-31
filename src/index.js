@@ -7,6 +7,7 @@ import userRouter from "./routers/user.routes.js";
 import cors from "cors";
 import cookiParser from "cookie-parser";
 import errorMiddleware from "./middlewares/error.middle.js";
+import contestrouter from "./routers/contest.routes.js";
 
 dbConnect();
 
@@ -17,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 // ✅ Allowed origins
 const allowedOrigins = [
   "https://contest-koushik-arupriya.vercel.app",
-  "http://localhost:5173"
+  "http://localhost:5173",
 ];
 
 // Middleware
@@ -32,7 +33,7 @@ app.use(
       }
     },
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.json());
@@ -48,6 +49,7 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/contest", contestrouter);
 app.use(errorMiddleware);
 
 // Server start
