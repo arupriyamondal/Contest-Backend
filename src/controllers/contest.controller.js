@@ -4,8 +4,6 @@ import ApiError from "../utils/apierror.js";
 import ApiResponse from "../utils/apiresponse.js";
 import asyncHandler from "../utils/asynchandler.js";
 
-
-// ➤ Add Contest
 export const addContest = asyncHandler(async (req, res) => {
   const {
     contestTitle,
@@ -13,11 +11,12 @@ export const addContest = asyncHandler(async (req, res) => {
     projectBriefing,
     contestDeadLine,
     status,
-    limit
+    category,
+    entryLimit
   } = req.body;
 
   // ✅ Required fields validation
-  if (!contestTitle || !contestDescription || !projectBriefing) {
+  if (!contestTitle || !contestDescription || !projectBriefing || !category) {
     throw new ApiError(400, "All required fields must be provided");
   }
 
@@ -35,14 +34,13 @@ export const addContest = asyncHandler(async (req, res) => {
     projectBriefing,
     contestDeadLine,
     status,
-    limit
+    category,
+    entryLimit
   });
 
-  return res
-    .status(201)
-    .json(
-      new ApiResponse(201, contest, "Contest created successfully")
-    );
+  return res.status(201).json(
+    new ApiResponse(201, contest, "Contest created successfully")
+  );
 });
 
 
@@ -52,16 +50,14 @@ export const getAllContests = asyncHandler(async (req, res) => {
 
   const total = await Contest.countDocuments();
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        {
-          total,
-          contests,
-        },
-        "All contests fetched successfully"
-      )
-    );
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        total,
+        contests,
+      },
+      "All contests fetched successfully"
+    )
+  );
 });

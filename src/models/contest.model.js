@@ -4,18 +4,18 @@ const contestSchema = new Schema(
   {
     contestTitle: {
       type: String,
-      require: true,
+      required: true,
       unique: true,
       trim: true,
     },
     contestDescription: {
       type: String,
-      require: true,
+      required: true,
       trim: true,
     },
     projectBriefing: {
       type: String,
-      require: true,
+      required: true,
       trim: true,
     },
     contestDeadLine: {
@@ -26,11 +26,20 @@ const contestSchema = new Schema(
       enum: ["Upcoming", "On-Going", "Completed"],
       default: "Upcoming",
     },
-    limit:{
-      type:Number
-    }
+
+    // ✅ Category
+    category: {
+      type: String,
+      enum: ["MERN", "UI/UX DESIGN", "DIGITAL MARKETING"],
+      required: true,
+    },
+
+    // ✅ Renamed field
+    entryLimit: {
+      type: Number,
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 const Contest = model("Contest", contestSchema);
