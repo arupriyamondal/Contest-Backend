@@ -11,4 +11,6 @@ contestrouter.post("/add-contest",verifyJWT,isAdmin, addContest);
 // ➤ Get All Contests
 contestrouter.get("/all-contests",verifyJWT,isAdmin, getAllContests);
 
+contestrouter.get("/stu-contest",verifyJWT,getAllContests)
+
 export default contestrouter;
