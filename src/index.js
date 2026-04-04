@@ -8,6 +8,7 @@ import cors from "cors";
 import cookiParser from "cookie-parser";
 import errorMiddleware from "./middlewares/error.middle.js";
 import contestrouter from "./routers/contest.routes.js";
+import participantrouter from "./routers/participants.routes.js";
 
 dbConnect();
 
@@ -50,9 +51,11 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/contest", contestrouter);
+app.use("/api/v1/participate", participantrouter);
 app.use(errorMiddleware);
 
 // Server start
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
