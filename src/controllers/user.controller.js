@@ -286,6 +286,41 @@ const updateProfile = asyncHandler(async (req, res) => {
   );
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken,getAllUsers,getUserById,deleteUserById,updateProfile };
+// 🔹 UPDATE USER ROLE (Admin only)
+const updateUserRole = asyncHandler(async (req, res) => {
+  const { id } = req.params; // user id
+  const { role } = req.body;
+
+  // ✅ Validate role
+  if (!role || !["User", "Admin"].includes(role)) {
+    throw new ApiError(400, "Valid role is required (User or Admin)");
+  }
+
+  // ✅ Find user
+  const user = await User.findById(id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // ✅ Prevent updating same role
+  if (user.role === role) {
+    throw new ApiError(400, `User already has role: ${role}`);
+  }
+
+  // ✅ Update role
+  user.role = role;
+  await user.save({ validateBeforeSave: false });
+
+  const updatedUser = await User.findById(id).select(
+    "-password -refreshToken"
+  );
+
+  return res.status(200).json(
+    new ApiResponse(200, updatedUser, "User role updated successfully")
+  );
+});
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken,getAllUsers,getUserById,deleteUserById,updateProfile,updateUserRole };
 
 
