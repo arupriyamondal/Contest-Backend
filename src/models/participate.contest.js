@@ -30,7 +30,7 @@ const participationSchema = new Schema(
     // 🏆 Status of submission
     submissionStatus: {
       type: String,
-      enum: ["Pending", "Submitted", "Reviewed", "Rejected"],
+      enum: ["Pending", "Submitted"],
       default: "Pending",
     },
 

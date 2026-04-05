@@ -9,6 +9,7 @@ import cookiParser from "cookie-parser";
 import errorMiddleware from "./middlewares/error.middle.js";
 import contestrouter from "./routers/contest.routes.js";
 import participantrouter from "./routers/participants.routes.js";
+import resultRouter from "./routers/result.routes.js";
 
 dbConnect();
 
@@ -52,6 +53,7 @@ app.get("/", (req, res) => {
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/contest", contestrouter);
 app.use("/api/v1/participate", participantrouter);
+app.use("/api/v1/result",resultRouter)
 app.use(errorMiddleware);
 
 // Server start
