@@ -17,6 +17,6 @@ contestrouter.get("/stu-contest", verifyJWT, getAllContests);
 // ➤ Update Contest Status (Admin only)
 contestrouter.patch("/update-status/:contestId",verifyJWT,isAdmin,updateContestStatus);
 
-contestrouter.delete("/delete-contest",verifyJWT,isAdmin,deleteContest)
+contestrouter.delete("/delete-contest/:contestId", verifyJWT, isAdmin, deleteContest);
 
 export default contestrouter;
