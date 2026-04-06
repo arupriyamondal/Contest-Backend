@@ -106,3 +106,23 @@ export const updateContestStatus = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, contest, "Contest status updated successfully"));
 });
+
+export const deleteContest = asyncHandler(async (req, res) => {
+  const { contestId } = req.params;
+
+  if (!contestId) {
+    throw new ApiError(400, "Contest ID is required");
+  }
+
+  const contest = await Contest.findById(contestId);
+
+  if (!contest) {
+    throw new ApiError(404, "Contest not found");
+  }
+
+  await Contest.deleteOne({ _id: contestId });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Contest deleted successfully"));
+});
