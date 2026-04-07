@@ -62,4 +62,6 @@ teamRouter.patch("/update-submission/:teamId", isAdmin, updateSubmissionStatus);
 // ✅ Get Submission of a Team
 teamRouter.get("/submissions/:teamId", isAdmin, getTeamSubmissions);
 
+teamRouter.get("/user-team",viewAllTeams)
+
 export default teamRouter;
