@@ -227,15 +227,20 @@ export const rejectRequest = asyncHandler(async (req, res) => {
 });
 
 // ✅ GET MY TEAM
+// ✅ GET MY TEAM (Updated)
 export const getMyTeam = asyncHandler(async (req, res) => {
   const userEmail = req.user.email;
   const { contestId } = req.params;
 
   const user = await User.findOne({ email: userEmail });
 
+  // UPDATE THIS QUERY:
   const team = await Team.findOne({
     contest: contestId,
-    members: user._id,
+    $or: [
+      { members: user._id },
+      { invitedUsers: user._id }
+    ]
   })
     .populate("members", "userName email")
     .populate("leader", "userName email");
@@ -250,7 +255,6 @@ export const getMyTeam = asyncHandler(async (req, res) => {
       ),
     );
 });
-
 // ✅ GET TEAM DETAILS
 export const getTeamDetails = asyncHandler(async (req, res) => {
   const { teamId } = req.params;
