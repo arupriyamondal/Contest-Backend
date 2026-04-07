@@ -12,21 +12,26 @@ export const addContest = asyncHandler(async (req, res) => {
     status,
     category,
     entryLimit,
+    projectType,
+    teamSize,
   } = req.body;
 
-  // ✅ Required fields validation
-  if (!contestTitle || !contestDescription || !projectBriefing || !category) {
+  // ✅ Required fields
+  if (!contestTitle || !contestDescription || !projectBriefing || !category || !projectType) {
     throw new ApiError(400, "All required fields must be provided");
   }
 
-  // ✅ Check duplicate contest title
+  // ✅ Duplicate title check
   const existingContest = await Contest.findOne({ contestTitle });
-
   if (existingContest) {
     throw new ApiError(409, "Contest already exists with this title");
   }
 
-  // ✅ Create contest
+  // ✅ Team size validation
+  if (projectType === "Team" && (!teamSize || teamSize < 2)) {
+    throw new ApiError(400, "Team size must be at least 2 for team projects");
+  }
+
   const contest = await Contest.create({
     contestTitle,
     contestDescription,
@@ -35,13 +40,14 @@ export const addContest = asyncHandler(async (req, res) => {
     status,
     category,
     entryLimit,
+    projectType,
+    teamSize: projectType === "Team" ? teamSize : 1,
   });
 
   return res
     .status(201)
     .json(new ApiResponse(201, contest, "Contest created successfully"));
 });
-
 // ➤ Get All Contests + Total Count
 export const getAllContests = asyncHandler(async (req, res) => {
   const contests = await Contest.find().sort({ createdAt: -1 });
@@ -78,33 +84,51 @@ export const getAllContests = asyncHandler(async (req, res) => {
 // ➤ Update Contest Status (with auto deadline check)
 export const updateContestStatus = asyncHandler(async (req, res) => {
   const { contestId } = req.params;
-  let { status } = req.body;
+  let { status, projectType, teamSize } = req.body;
 
   const validStatus = ["Upcoming", "On-Going", "Completed"];
+  const validProjectType = ["Individual", "Team"];
 
   // ✅ Find contest first
   const contest = await Contest.findById(contestId);
-
   if (!contest) {
     throw new ApiError(404, "Contest not found");
   }
 
-  // ✅ Auto status update based on deadline
+  // ✅ Update status (auto based on deadline)
   if (contest.contestDeadLine && new Date() > contest.contestDeadLine) {
     contest.status = "Completed";
-  } else {
-    // ✅ Manual update (if provided)
-    if (!status || !validStatus.includes(status)) {
-      throw new ApiError(400, "Invalid or missing status value");
+  } else if (status) {
+    if (!validStatus.includes(status)) {
+      throw new ApiError(400, "Invalid status value");
     }
     contest.status = status;
+  }
+
+  // ✅ Update projectType if provided
+  if (projectType) {
+    if (!validProjectType.includes(projectType)) {
+      throw new ApiError(400, "Invalid project type");
+    }
+    contest.projectType = projectType;
+
+    // ✅ If projectType is Team, validate teamSize
+    if (projectType === "Team") {
+      if (!teamSize || teamSize < 2) {
+        throw new ApiError(400, "Team size must be at least 2 for team projects");
+      }
+      contest.teamSize = teamSize;
+    } else {
+      // Individual project → set teamSize = 1
+      contest.teamSize = 1;
+    }
   }
 
   await contest.save();
 
   return res
     .status(200)
-    .json(new ApiResponse(200, contest, "Contest status updated successfully"));
+    .json(new ApiResponse(200, contest, "Contest updated successfully"));
 });
 
 export const deleteContest = asyncHandler(async (req, res) => {

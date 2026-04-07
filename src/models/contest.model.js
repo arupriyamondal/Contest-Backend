@@ -26,17 +26,24 @@ const contestSchema = new Schema(
       enum: ["Upcoming", "On-Going", "Completed"],
       default: "Upcoming",
     },
-
-    // ✅ Category
     category: {
       type: String,
       enum: ["MERN", "UI/UX DESIGN", "DIGITAL MARKETING"],
       required: true,
     },
-
-    // ✅ Renamed field
     entryLimit: {
       type: Number,
+    },
+
+    // ✅ New fields
+    projectType: {
+      type: String,
+      enum: ["Individual", "Team"],
+      required: true,
+    },
+    teamSize: {
+      type: Number, // Max number of members for team projects
+      default: 1,
     },
   },
   { timestamps: true }

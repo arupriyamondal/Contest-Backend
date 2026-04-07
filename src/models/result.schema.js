@@ -9,17 +9,10 @@ const resultSchema = new Schema(
       required: true,
     },
 
-    // 🔗 User reference
-    user: {
+    // 👥 Team reference (NEW)
+    team: {
       type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-
-    // 🔗 Participation reference (optional but useful)
-    participation: {
-      type: Schema.Types.ObjectId,
-      ref: "Participation",
+      ref: "Team",
       required: true,
     },
 
@@ -36,7 +29,7 @@ const resultSchema = new Schema(
       default: 0,
     },
 
-    // 📝 Remarks (optional)
+    // 📝 Remarks
     remarks: {
       type: String,
       trim: true,
@@ -45,8 +38,8 @@ const resultSchema = new Schema(
   { timestamps: true }
 );
 
-// ❗ Prevent duplicate result per user per contest
-resultSchema.index({ user: 1, contest: 1 }, { unique: true });
+// ❗ Prevent duplicate result per team per contest
+resultSchema.index({ team: 1, contest: 1 }, { unique: true });
 
 const Result = model("Result", resultSchema);
 
