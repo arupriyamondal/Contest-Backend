@@ -3,7 +3,8 @@ import ApiError from "../utils/apierror.js";
 import jwt from "jsonwebtoken";
 import ApiResponse from "../utils/apiresponse.js";
 import asyncHandler from "../utils/asynchandler.js";
-
+import crypto from "crypto";
+import { sendEmail } from "../utils/mailtrap.js";
 // 🔹 Generate Tokens
 const generateAccessAndRefreshToken = async (userId) => {
   const user = await User.findById(userId);
@@ -227,7 +228,146 @@ const updateUserRole = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, updatedUser, "User role updated successfully"));
 });
 
+
+const sendVerificationEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) throw new ApiError(400, "Email is required");
+
+  const user = await User.findOne({ email });
+
+  if (!user) throw new ApiError(404, "User not found");
+
+  if (user.isEmailVerified) {
+    throw new ApiError(400, "Email already verified");
+  }
+
+  // ✅ generate token
+  const token = user.generateEmailVerificationToken();
+
+  await user.save({ validateBeforeSave: false });
+
+  const verifyURL = `${process.env.BASE_URL}/api/v1/user/verify-email/${token}`;
+
+  await sendEmail({
+    to: user.email,
+    subject: "Verify Your Email",
+    html: `
+      <h2>Email Verification</h2>
+      <p>Click below to verify:</p>
+      <a href="${verifyURL}">${verifyURL}</a>
+      <p>Expires in 10 minutes</p>
+    `,
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Verification email sent"));
+});
+
+
+
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  if (!token) throw new ApiError(400, "Token is required");
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationTokenExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Invalid or expired token");
+  }
+
+  // ✅ verify user
+  user.isEmailVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationTokenExpiry = undefined;
+
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Email verified successfully"));
+});
+
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) throw new ApiError(400, "Email is required");
+
+  const user = await User.findOne({ email });
+  if (!user) throw new ApiError(404, "User not found");
+
+  // ✅ generate token
+  const token = user.generateForgotPasswordToken();
+
+  await user.save({ validateBeforeSave: false });
+
+  const resetURL = `${process.env.BASE_URL}/api/v1/user/reset-password/${token}`;
+
+  await sendEmail({
+    to: user.email,
+    subject: "Reset Your Password",
+    html: `
+      <h2>Forgot Password</h2>
+      <p>Click below to reset your password:</p>
+      <a href="${resetURL}">${resetURL}</a>
+      <p>This link expires in 10 minutes</p>
+
+      <p>OR use this token:</p>
+      <h3>${token}</h3>
+    `,
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Reset email sent"));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  if (!token) throw new ApiError(400, "Token is required");
+  if (!newPassword) throw new ApiError(400, "New password is required");
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    forgotPasswordToken: hashedToken,
+    forgotPasswordTokenExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Invalid or expired token");
+  }
+
+  // ✅ update password
+  user.password = newPassword;
+  user.forgotPasswordToken = undefined;
+  user.forgotPasswordTokenExpiry = undefined;
+
+  await user.save(); // password will auto hash
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Password reset successful"));
+});
+
 export {
   registerUser, loginUser, logoutUser, refreshAccessToken,
-  getAllUsers, getUserById, deleteUserById, updateProfile, updateUserRole
+  getAllUsers, getUserById, deleteUserById, updateProfile, updateUserRole,sendVerificationEmail,verifyEmail,
+  forgotPassword,resetPassword
 };

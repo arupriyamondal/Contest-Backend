@@ -97,6 +97,35 @@ userSchema.methods.generateRefreshToken = function () {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
   });
 };
+userSchema.methods.generateEmailVerificationToken = function () {
+  const token = crypto.randomBytes(32).toString("hex");
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  this.emailVerificationToken = hashedToken;
+  this.emailVerificationTokenExpiry = Date.now() + 10 * 60 * 1000;
+
+  return token;
+};
+
+
+// 🔐 Generate Forgot Password Token
+userSchema.methods.generateForgotPasswordToken = function () {
+  const token = crypto.randomBytes(32).toString("hex");
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  this.forgotPasswordToken = hashedToken;
+  this.forgotPasswordTokenExpiry = Date.now() + 10 * 60 * 1000; // 10 min
+
+  return token;
+};
 
 const User = model("User", userSchema);
 
