@@ -28,7 +28,7 @@ const contestSchema = new Schema(
     },
     category: {
       type: String,
-      enum: ["MERN", "UI/UX DESIGN", "DIGITAL MARKETING"],
+      enum: ["MERN", "UI/UX DESIGN", "DIGITAL MARKETING","WEBSITE DESIGING"],
       required: true,
     },
     entryLimit: {

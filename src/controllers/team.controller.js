@@ -118,6 +118,35 @@ export const acceptInvite = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, team, "Joined via invite"));
 });
 
+
+export const rejectInvite = asyncHandler(async (req, res) => {
+  const userEmail = req.user.email;
+  const { teamId } = req.body;
+
+  // 🔍 Find user
+  const user = await User.findOne({ email: userEmail });
+  if (!user) throw new ApiError(404, "User not found");
+
+  // 🔍 Find team
+  const team = await Team.findById(teamId);
+  if (!team) throw new ApiError(404, "Team not found");
+
+  // ❗ Check if user is invited
+  if (!team.invitedUsers.some(id => id.toString() === user._id.toString())) {
+    throw new ApiError(400, "No invite found");
+  }
+
+  // ✅ Remove user from invited list (REJECT ACTION)
+  team.invitedUsers = team.invitedUsers.filter(
+    (id) => id.toString() !== user._id.toString()
+  );
+
+  await team.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, team, "Invite rejected successfully")
+  );
+});
 // ✅ REQUEST TO JOIN
 export const requestToJoin = asyncHandler(async (req, res) => {
   const userEmail = req.user.email;

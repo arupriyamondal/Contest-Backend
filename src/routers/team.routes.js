@@ -13,6 +13,7 @@ import {
   addSubmission,
   updateSubmissionStatus,
   getTeamSubmissions,
+  rejectInvite,
 } from "../controllers/team.controller.js";
 
 import { isAdmin } from "../middlewares/isAdmin.js";
@@ -31,6 +32,8 @@ teamRouter.post("/invite-user", inviteUser);
 
 // ✅ Accept Invite (Invited user)
 teamRouter.post("/accept-invite", acceptInvite);
+
+teamRouter.post("/reject-invite", verifyJWT, rejectInvite);
 
 // ✅ Request to Join Team
 teamRouter.post("/request-join", requestToJoin);
