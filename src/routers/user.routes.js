@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {deleteUserById, forgotPassword, getAllUsers, getUserById, loginUser,logoutUser,refreshAccessToken,registerUser, resetPassword, sendVerificationEmail, updateProfile, updateProfileImage, updateUserRole, verifyEmail} from "../controllers/user.controller.js";
+import {deleteUserById, forgotPassword, getAllUsers, getUserById, loginUser,logoutUser,refreshAccessToken,registerUser, resendVerificationEmail, resetPassword, updateProfile, updateProfileImage, updateUserRole, verifyEmail} from "../controllers/user.controller.js";
 
 import { verifyJWT } from "../middlewares/verifyJwt.js";
 import { isAdmin } from "../middlewares/isAdmin.js";
@@ -19,6 +19,7 @@ router.post("/login-user", loginUser);
 
 // Logout (only logged-in users)
 router.get("/logout-user", verifyJWT, logoutUser);
+
 
 // Get current user (VERY IMPORTANT)
 router.get("/me", verifyJWT, (req, res) => {
@@ -68,11 +69,10 @@ router.delete("/delete-user/:id",verifyJWT,isAdmin,deleteUserById)
 router.put("/update-user",verifyJWT,updateProfile)
 router.patch("/update-role/:id", verifyJWT, isAdmin, updateUserRole);
 
-router.post("/send-verification", sendVerificationEmail);
-router.get("/verify-email/:token", verifyEmail);
+router.post("/resend-mail",resendVerificationEmail)
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
-
+router.get("/verify-email/:token", verifyEmail);
 
 router.put(
   "/update-profile",

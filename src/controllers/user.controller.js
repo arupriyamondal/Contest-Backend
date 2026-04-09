@@ -42,7 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
     public_id: "",
   };
 
-  // ✅ If image exists → upload
+  // ✅ Image upload
   if (req.file) {
     try {
       const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
@@ -60,13 +60,12 @@ const registerUser = asyncHandler(async (req, res) => {
       throw new ApiError(500, "Image upload failed");
     }
 
-    // delete local file after upload
     if (fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
   }
 
-  // ✅ Create user (with or without image)
+  // ✅ Create user
   const newUser = await User.create({
     userName,
     email,
@@ -76,12 +75,36 @@ const registerUser = asyncHandler(async (req, res) => {
     profileImage: profileImageData,
   });
 
+  // ✅ 🔥 GENERATE EMAIL TOKEN (IMPORTANT)
+  const token = newUser.generateEmailVerificationToken();
+
+  await newUser.save({ validateBeforeSave: false });
+
+  // ✅ Verification link
+  const verifyURL = `${process.env.BASE_URL}/api/v1/user/verify-email/${token}`;
+
+  // ✅ Send email
+  await sendEmail({
+    to: newUser.email,
+    subject: "Verify Your Email",
+    html: `
+      <h2>Email Verification</h2>
+      <p>Click below to verify your email:</p>
+      <a href="${verifyURL}">${verifyURL}</a>
+      <p>This link expires in 10 minutes</p>
+    `,
+  });
+
   const createdUser = await User.findById(newUser._id).select(
     "-password -refreshToken"
   );
 
   return res.status(201).json(
-    new ApiResponse(201, createdUser, "User registered successfully")
+    new ApiResponse(
+      201,
+      createdUser,
+      "User registered successfully. Please verify your email."
+    )
   );
 });
 
@@ -95,35 +118,46 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
   if (!user) throw new ApiError(404, "User not found");
 
+  // ✅ 🔥 CHECK EMAIL VERIFIED (IMPORTANT)
+  if (!user.isEmailVerified) {
+    throw new ApiError(403, "Please verify your email before logging in");
+  }
+
   const isPasswordCorrect = await user.isPasswordCorrect(password);
   if (!isPasswordCorrect) throw new ApiError(401, "Invalid credentials");
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+  const { accessToken, refreshToken } =
+    await generateAccessAndRefreshToken(user._id);
 
-  const loggedUser = await User.findById(user._id).select("-password -refreshToken");
+  const loggedUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
 
-  // Access token: short-lived (15 min)
   const accessOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    maxAge: 15 * 60 * 1000, // 15 minutes
+    maxAge: 15 * 60 * 1000,
   };
 
-  // Refresh token: long-lived (7 days) — survives browser restarts
   const refreshOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   };
 
   return res
     .status(200)
     .cookie("accessToken", accessToken, accessOptions)
     .cookie("refreshToken", refreshToken, refreshOptions)
-    // ✅ Also return tokens in body so frontend can store in localStorage
-    .json(new ApiResponse(200, { user: loggedUser, accessToken, refreshToken }, "Login successful"));
+    .json(
+      new ApiResponse(
+        200,
+        { user: loggedUser, accessToken, refreshToken },
+        "Login successful"
+      )
+    );
 });
 
 // 🔹 LOGOUT USER
@@ -272,56 +306,59 @@ const updateUserRole = asyncHandler(async (req, res) => {
 });
 
 
-const sendVerificationEmail = asyncHandler(async (req, res) => {
+const resendVerificationEmail = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
   if (!email) throw new ApiError(400, "Email is required");
 
-  // ❌ remove DB check
-  // const user = await User.findOne({ email });
-  // if (!user) throw new ApiError(404, "User not found");
-  // if (user.isEmailVerified) throw new ApiError(400, "Email already verified");
+  const user = await User.findOne({ email });
 
-  // ✅ generate token manually
-  const crypto = await import("crypto");
-  const token = crypto.randomBytes(32).toString("hex");
+  if (!user) throw new ApiError(404, "User not found");
 
-  const verifyURL = `${process.env.BASE_URL}/api/v1/user/verify-email/${token}?email=${email}`;
+  if (user.isEmailVerified) {
+    throw new ApiError(400, "Email already verified");
+  }
+
+  const token = user.generateEmailVerificationToken();
+  await user.save({ validateBeforeSave: false });
+
+  const verifyURL = `${process.env.BASE_URL}/api/v1/user/verify-email/${token}`;
 
   await sendEmail({
-    to: email, // ✅ send to entered email
+    to: user.email,
     subject: "Verify Your Email",
     html: `
       <h2>Email Verification</h2>
       <p>Click below to verify:</p>
       <a href="${verifyURL}">${verifyURL}</a>
-      <p>Expires in 10 minutes</p>
     `,
   });
 
   return res
     .status(200)
-    .json(new ApiResponse(200, null, "Verification email sent"));
+    .json(new ApiResponse(200, null, "Verification email resent"));
 });
-
-
 const verifyEmail = asyncHandler(async (req, res) => {
   const { token } = req.params;
 
-  if (!token) throw new ApiError(400, "Token is required");
+  if (!token) {
+    throw new ApiError(400, "Invalid token");
+  }
 
+  // 🔐 hash token
   const hashedToken = crypto
     .createHash("sha256")
     .update(token)
     .digest("hex");
 
+  // 🔍 match with DB (IMPORTANT: correct field names)
   const user = await User.findOne({
     emailVerificationToken: hashedToken,
-    emailVerificationTokenExpiry: { $gt: Date.now() },
+    emailVerificationTokenExpiry: { $gt: Date.now() }, // ✅ FIXED
   });
 
   if (!user) {
-    throw new ApiError(400, "Invalid or expired token");
+    throw new ApiError(400, "Token expired or invalid");
   }
 
   // ✅ verify user
@@ -329,13 +366,12 @@ const verifyEmail = asyncHandler(async (req, res) => {
   user.emailVerificationToken = undefined;
   user.emailVerificationTokenExpiry = undefined;
 
-  await user.save({ validateBeforeSave: false });
+  await user.save();
 
   return res
     .status(200)
     .json(new ApiResponse(200, null, "Email verified successfully"));
 });
-
 
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -459,6 +495,6 @@ const updateProfileImage = asyncHandler(async (req, res) => {
 });
 export {
   registerUser, loginUser, logoutUser, refreshAccessToken,
-  getAllUsers, getUserById, deleteUserById, updateProfile, updateUserRole,sendVerificationEmail,verifyEmail,
-  forgotPassword,resetPassword,updateProfileImage
+  getAllUsers, getUserById, deleteUserById, updateProfile, updateUserRole,resendVerificationEmail,
+  forgotPassword,resetPassword,updateProfileImage,verifyEmail,
 };
