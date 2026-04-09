@@ -5,6 +5,8 @@ import ApiResponse from "../utils/apiresponse.js";
 import asyncHandler from "../utils/asynchandler.js";
 import crypto from "crypto";
 import { sendEmail } from "../utils/mailtrap.js";
+import cloudinary from "../config/cloudinary.js";
+import fs from "fs";
 // 🔹 Generate Tokens
 const generateAccessAndRefreshToken = async (userId) => {
   const user = await User.findById(userId);
@@ -23,23 +25,64 @@ const generateAccessAndRefreshToken = async (userId) => {
 const registerUser = asyncHandler(async (req, res) => {
   const { userName, email, password, contact, gender } = req.body;
 
-  if (!userName || !email || !password || !contact || !gender)
+  if (!userName || !email || !password || !contact || !gender) {
     throw new ApiError(400, "All fields are required");
+  }
 
-  if (!/^[0-9]{10}$/.test(contact))
-    throw new ApiError(400, "Contact must be exactly 10 digits");
+  const existingUser = await User.findOne({
+    $or: [{ email }, { contact }],
+  });
 
-  if (password.length < 8)
-    throw new ApiError(400, "Password must be at least 8 characters");
+  if (existingUser) {
+    throw new ApiError(409, "User already exists");
+  }
 
-  const existingUser = await User.findOne({ $or: [{ email }, { contact }] });
-  if (existingUser)
-    throw new ApiError(409, "User already exists with this email or contact");
+  let profileImageData = {
+    url: "",
+    public_id: "",
+  };
 
-  const newUser = await User.create({ userName, email, password, contact, gender });
-  const createdUser = await User.findById(newUser._id).select("-password -refreshToken");
+  // ✅ If image exists → upload
+  if (req.file) {
+    try {
+      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
+        folder: "profile_images",
+      });
 
-  return res.status(201).json(new ApiResponse(201, createdUser, "User registered successfully"));
+      profileImageData = {
+        url: uploadedImage.secure_url,
+        public_id: uploadedImage.public_id,
+      };
+    } catch (error) {
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      throw new ApiError(500, "Image upload failed");
+    }
+
+    // delete local file after upload
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+  }
+
+  // ✅ Create user (with or without image)
+  const newUser = await User.create({
+    userName,
+    email,
+    password,
+    contact,
+    gender,
+    profileImage: profileImageData,
+  });
+
+  const createdUser = await User.findById(newUser._id).select(
+    "-password -refreshToken"
+  );
+
+  return res.status(201).json(
+    new ApiResponse(201, createdUser, "User registered successfully")
+  );
 });
 
 // 🔹 LOGIN USER  ← FIXED: maxAge on cookies + tokens in response body
@@ -366,8 +409,61 @@ const resetPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "Password reset successful"));
 });
 
+
+// ✅ Update Profile Image (Delete old + upload new)
+const updateProfileImage = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  if (!req.file) {
+    throw new ApiError(400, "Image file is required");
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  let result;
+
+  try {
+    // 🔥 Delete old image from Cloudinary
+    if (user.profileImage?.public_id) {
+      await cloudinary.uploader.destroy(user.profileImage.public_id);
+    }
+
+    // 🔥 Upload new image
+    result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "profile_images",
+    });
+
+  } catch (error) {
+    // ❌ If upload fails → delete local file
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    throw new ApiError(500, "Image upload failed");
+  }
+
+  // 🔥 Delete local file safely
+  if (req.file?.path && fs.existsSync(req.file.path)) {
+    fs.unlinkSync(req.file.path);
+  }
+
+  // 🔥 Save to DB
+  user.profileImage = {
+    url: result.secure_url,
+    public_id: result.public_id,
+  };
+
+  await user.save();
+
+  res.status(200).json(
+    new ApiResponse(200, user, "Profile image updated successfully")
+  );
+});
 export {
   registerUser, loginUser, logoutUser, refreshAccessToken,
   getAllUsers, getUserById, deleteUserById, updateProfile, updateUserRole,sendVerificationEmail,verifyEmail,
-  forgotPassword,resetPassword
+  forgotPassword,resetPassword,updateProfileImage
 };

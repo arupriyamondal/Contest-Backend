@@ -22,7 +22,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      match: /^[0-9]{10}$/, // ✅ 10 digit validation (no message)
+      match: /^[0-9]{10}$/,
     },
 
     gender: {
@@ -35,13 +35,25 @@ const userSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      minlength: 8, // ✅ min length (no message)
+      minlength: 8,
     },
 
     role: {
       type: String,
       enum: ["User", "Admin"],
       default: "User",
+    },
+
+    // ✅ Profile Image (Cloudinary)
+    profileImage: {
+      url: {
+        type: String, // Cloudinary image URL
+        default: "",
+      },
+      public_id: {
+        type: String, // Cloudinary public_id (important for delete/update)
+        default: "",
+      },
     },
 
     refreshToken: {
@@ -97,6 +109,8 @@ userSchema.methods.generateRefreshToken = function () {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
   });
 };
+
+// 🔐 Email Verification Token
 userSchema.methods.generateEmailVerificationToken = function () {
   const token = crypto.randomBytes(32).toString("hex");
 
@@ -111,8 +125,7 @@ userSchema.methods.generateEmailVerificationToken = function () {
   return token;
 };
 
-
-// 🔐 Generate Forgot Password Token
+// 🔐 Forgot Password Token
 userSchema.methods.generateForgotPasswordToken = function () {
   const token = crypto.randomBytes(32).toString("hex");
 
@@ -122,7 +135,7 @@ userSchema.methods.generateForgotPasswordToken = function () {
     .digest("hex");
 
   this.forgotPasswordToken = hashedToken;
-  this.forgotPasswordTokenExpiry = Date.now() + 10 * 60 * 1000; // 10 min
+  this.forgotPasswordTokenExpiry = Date.now() + 10 * 60 * 1000;
 
   return token;
 };
