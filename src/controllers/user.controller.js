@@ -277,23 +277,19 @@ const sendVerificationEmail = asyncHandler(async (req, res) => {
 
   if (!email) throw new ApiError(400, "Email is required");
 
-  const user = await User.findOne({ email });
+  // ❌ remove DB check
+  // const user = await User.findOne({ email });
+  // if (!user) throw new ApiError(404, "User not found");
+  // if (user.isEmailVerified) throw new ApiError(400, "Email already verified");
 
-  if (!user) throw new ApiError(404, "User not found");
+  // ✅ generate token manually
+  const crypto = await import("crypto");
+  const token = crypto.randomBytes(32).toString("hex");
 
-  if (user.isEmailVerified) {
-    throw new ApiError(400, "Email already verified");
-  }
-
-  // ✅ generate token
-  const token = user.generateEmailVerificationToken();
-
-  await user.save({ validateBeforeSave: false });
-
-  const verifyURL = `${process.env.BASE_URL}/api/v1/user/verify-email/${token}`;
+  const verifyURL = `${process.env.BASE_URL}/api/v1/user/verify-email/${token}?email=${email}`;
 
   await sendEmail({
-    to: user.email,
+    to: email, // ✅ send to entered email
     subject: "Verify Your Email",
     html: `
       <h2>Email Verification</h2>
@@ -307,7 +303,6 @@ const sendVerificationEmail = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, null, "Verification email sent"));
 });
-
 
 
 const verifyEmail = asyncHandler(async (req, res) => {
