@@ -341,36 +341,99 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
 const verifyEmail = asyncHandler(async (req, res) => {
   const { token } = req.params;
 
+  const successPage = (message) => `
+    <html>
+      <head>
+        <title>Email Verification</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background: #f0fdf4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+          }
+          .box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+          }
+          h2 {
+            color: green;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="box">
+          <h2>✅ ${message}</h2>
+          <p>You can now login to your account.</p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const errorPage = (message) => `
+    <html>
+      <head>
+        <title>Email Verification</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background: #fef2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+          }
+          .box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+          }
+          h2 {
+            color: red;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="box">
+          <h2>❌ ${message}</h2>
+          <p>Please try again or request a new verification link.</p>
+        </div>
+      </body>
+    </html>
+  `;
+
   if (!token) {
-    throw new ApiError(400, "Invalid token");
+    return res.send(errorPage("Invalid token"));
   }
 
-  // 🔐 hash token
   const hashedToken = crypto
     .createHash("sha256")
     .update(token)
     .digest("hex");
 
-  // 🔍 match with DB (IMPORTANT: correct field names)
   const user = await User.findOne({
     emailVerificationToken: hashedToken,
-    emailVerificationTokenExpiry: { $gt: Date.now() }, // ✅ FIXED
+    emailVerificationTokenExpiry: { $gt: Date.now() },
   });
 
   if (!user) {
-    throw new ApiError(400, "Token expired or invalid");
+    return res.send(errorPage("Token expired or invalid"));
   }
 
-  // ✅ verify user
   user.isEmailVerified = true;
   user.emailVerificationToken = undefined;
   user.emailVerificationTokenExpiry = undefined;
 
   await user.save();
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, null, "Email verified successfully"));
+  return res.send(successPage("Email verified successfully"));
 });
 
 const forgotPassword = asyncHandler(async (req, res) => {

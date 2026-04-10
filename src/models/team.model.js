@@ -27,7 +27,11 @@ const teamSchema = new Schema(
       ref: "User",
       required: true,
     },
-
+    approvalStatus: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
+    },
     invitedUsers: [
       {
         type: Schema.Types.ObjectId,

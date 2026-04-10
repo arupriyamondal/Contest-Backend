@@ -14,6 +14,8 @@ import {
   updateSubmissionStatus,
   getTeamSubmissions,
   rejectInvite,
+  updateTeamApproval,
+  deleteTeamByUser,
 } from "../controllers/team.controller.js";
 
 import { isAdmin } from "../middlewares/isAdmin.js";
@@ -66,5 +68,9 @@ teamRouter.patch("/update-submission/:teamId", isAdmin, updateSubmissionStatus);
 teamRouter.get("/submissions/:teamId", isAdmin, getTeamSubmissions);
 
 teamRouter.get("/user-team",viewAllTeams)
+
+teamRouter.patch("/approve-team/:teamId", isAdmin, updateTeamApproval);
+
+teamRouter.delete("/delete/:teamId", isAdmin, deleteTeamByUser);
 
 export default teamRouter;

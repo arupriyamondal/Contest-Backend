@@ -368,6 +368,10 @@ export const addSubmission = asyncHandler(async (req, res) => {
   if (team.submissionStatus === "Submitted") {
     throw new ApiError(400, "Already submitted");
   }
+  // ❗ Approval check
+  if (team.approvalStatus !== "Approved") {
+    throw new ApiError(403, "Team is not approved by admin");
+  }
 
   // ✅ Save submission
   team.submissionLink = link;
@@ -414,4 +418,47 @@ export const getTeamSubmissions = asyncHandler(async (req, res) => {
       "Submission fetched",
     ),
   );
+});
+
+// ✅ ADMIN APPROVAL
+export const updateTeamApproval = asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const { status } = req.body; // Approved / Rejected
+
+  const team = await Team.findById(teamId);
+  if (!team) throw new ApiError(404, "Team not found");
+
+  if (!["Approved", "Rejected"].includes(status)) {
+    throw new ApiError(400, "Invalid status");
+  }
+
+  team.approvalStatus = status;
+  await team.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, team, `Team ${status.toLowerCase()} successfully`)
+  );
+});
+
+// ✅ DELETE TEAM (Leader Only - No Approval Restriction)
+export const deleteTeamByUser = asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const userEmail = req.user.email;
+
+  const user = await User.findOne({ email: userEmail });
+  if (!user) throw new ApiError(404, "User not found");
+
+  const team = await Team.findById(teamId);
+  if (!team) throw new ApiError(404, "Team not found");
+
+  // ❗ Only leader can delete
+  if (team.leader.toString() !== user._id.toString()) {
+    throw new ApiError(403, "Only team leader can delete the team");
+  }
+
+  await team.deleteOne();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Team deleted successfully"));
 });
