@@ -71,6 +71,6 @@ teamRouter.get("/user-team",viewAllTeams)
 
 teamRouter.patch("/approve-team/:teamId", isAdmin, updateTeamApproval);
 
-teamRouter.delete("/delete/:teamId", isAdmin, deleteTeamByUser);
+teamRouter.delete("/delete/:teamId", deleteTeamByUser);
 
 export default teamRouter;
