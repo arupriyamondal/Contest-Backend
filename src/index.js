@@ -11,6 +11,14 @@ import contestrouter from "./routers/contest.routes.js";
 
 import resultRouter from "./routers/result.routes.js";
 import teamRouter from "./routers/team.routes.js";
+import fs from "fs";
+import path from "path";
+
+const uploadDir = path.join(process.cwd(), "uploads");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
 
 dbConnect();
 
@@ -38,7 +46,8 @@ app.use(
     credentials: true,
   }),
 );
-
+// 👇 ADD THIS LINE
+app.use("/uploads", express.static("uploads"));
 app.use(express.json());
 app.use(cookiParser());
 app.use(urlencoded({ extended: true }));
