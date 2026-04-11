@@ -3,6 +3,7 @@ import ApiError from "../utils/apierror.js";
 import ApiResponse from "../utils/apiresponse.js";
 import asyncHandler from "../utils/asynchandler.js";
 
+// ✅ CREATE CONTEST
 export const addContest = asyncHandler(async (req, res) => {
   const {
     contestTitle,
@@ -17,8 +18,20 @@ export const addContest = asyncHandler(async (req, res) => {
   } = req.body;
 
   // ✅ Required fields
-  if (!contestTitle || !contestDescription || !projectBriefing || !category || !projectType) {
+  if (
+    !contestTitle ||
+    !contestDescription ||
+    !projectBriefing ||
+    !category ||
+    !projectType
+  ) {
     throw new ApiError(400, "All required fields must be provided");
+  }
+
+  // ✅ Validate projectType
+  const validProjectType = ["Individual", "Team", "Both"];
+  if (!validProjectType.includes(projectType)) {
+    throw new ApiError(400, "Invalid project type");
   }
 
   // ✅ Duplicate title check
@@ -28,8 +41,14 @@ export const addContest = asyncHandler(async (req, res) => {
   }
 
   // ✅ Team size validation
-  if (projectType === "Team" && (!teamSize || teamSize < 2)) {
-    throw new ApiError(400, "Team size must be at least 2 for team projects");
+  if (
+    (projectType === "Team" || projectType === "Both") &&
+    (!teamSize || teamSize < 2)
+  ) {
+    throw new ApiError(
+      400,
+      "Team size must be at least 2 for team/both projects",
+    );
   }
 
   const contest = await Contest.create({
@@ -41,18 +60,19 @@ export const addContest = asyncHandler(async (req, res) => {
     category,
     entryLimit,
     projectType,
-    teamSize: projectType === "Team" ? teamSize : 1,
+    teamSize: projectType === "Individual" ? 1 : teamSize,
   });
 
   return res
     .status(201)
     .json(new ApiResponse(201, contest, "Contest created successfully"));
 });
-// ➤ Get All Contests + Total Count
+
+// ➤ GET ALL CONTESTS
 export const getAllContests = asyncHandler(async (req, res) => {
   const contests = await Contest.find().sort({ createdAt: -1 });
 
-  // ✅ Auto अपडेट status
+  // ✅ Auto update status based on deadline
   const updatedContests = await Promise.all(
     contests.map(async (contest) => {
       if (
@@ -81,21 +101,20 @@ export const getAllContests = asyncHandler(async (req, res) => {
   );
 });
 
-// ➤ Update Contest Status (with auto deadline check)
+// ➤ UPDATE CONTEST
 export const updateContestStatus = asyncHandler(async (req, res) => {
   const { contestId } = req.params;
   let { status, projectType, teamSize } = req.body;
 
   const validStatus = ["Upcoming", "On-Going", "Completed"];
-  const validProjectType = ["Individual", "Team"];
+  const validProjectType = ["Individual", "Team", "Both"];
 
-  // ✅ Find contest first
   const contest = await Contest.findById(contestId);
   if (!contest) {
     throw new ApiError(404, "Contest not found");
   }
 
-  // ✅ Update status (auto based on deadline)
+  // ✅ Auto status update by deadline
   if (contest.contestDeadLine && new Date() > contest.contestDeadLine) {
     contest.status = "Completed";
   } else if (status) {
@@ -105,21 +124,24 @@ export const updateContestStatus = asyncHandler(async (req, res) => {
     contest.status = status;
   }
 
-  // ✅ Update projectType if provided
+  // ✅ Update projectType
   if (projectType) {
     if (!validProjectType.includes(projectType)) {
       throw new ApiError(400, "Invalid project type");
     }
+
     contest.projectType = projectType;
 
-    // ✅ If projectType is Team, validate teamSize
-    if (projectType === "Team") {
+    // ✅ Handle teamSize properly
+    if (projectType === "Team" || projectType === "Both") {
       if (!teamSize || teamSize < 2) {
-        throw new ApiError(400, "Team size must be at least 2 for team projects");
+        throw new ApiError(
+          400,
+          "Team size must be at least 2 for team/both projects",
+        );
       }
       contest.teamSize = teamSize;
     } else {
-      // Individual project → set teamSize = 1
       contest.teamSize = 1;
     }
   }
@@ -131,6 +153,7 @@ export const updateContestStatus = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, contest, "Contest updated successfully"));
 });
 
+// ➤ DELETE CONTEST
 export const deleteContest = asyncHandler(async (req, res) => {
   const { contestId } = req.params;
 
