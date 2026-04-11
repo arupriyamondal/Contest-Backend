@@ -38,7 +38,7 @@ const contestSchema = new Schema(
     // ✅ New fields
     projectType: {
       type: String,
-      enum: ["Individual", "Team","Both"],
+      enum: ["Individual","Team","Both"],
       required: true,
     },
     teamSize: {
