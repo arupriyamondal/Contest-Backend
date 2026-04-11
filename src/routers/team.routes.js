@@ -1,11 +1,6 @@
 import { Router } from "express";
 import {
   createTeam,
-  inviteUser,
-  acceptInvite,
-  requestToJoin,
-  acceptRequest,
-  rejectRequest,
   getMyTeam,
   getTeamDetails,
   viewAllTeams,
@@ -13,7 +8,6 @@ import {
   addSubmission,
   updateSubmissionStatus,
   getTeamSubmissions,
-  rejectInvite,
   updateTeamApproval,
   deleteTeamByUser,
 } from "../controllers/team.controller.js";
@@ -30,21 +24,7 @@ teamRouter.use(verifyJWT);
 teamRouter.post("/create-team", createTeam);
 
 // ✅ Invite User (Leader only)
-teamRouter.post("/invite-user", inviteUser);
 
-// ✅ Accept Invite (Invited user)
-teamRouter.post("/accept-invite", acceptInvite);
-
-teamRouter.post("/reject-invite", verifyJWT, rejectInvite);
-
-// ✅ Request to Join Team
-teamRouter.post("/request-join", requestToJoin);
-
-// ✅ Accept Join Request (Leader)
-teamRouter.post("/accept-request", acceptRequest);
-
-// ✅ Reject Join Request (Leader)
-teamRouter.post("/reject-request", rejectRequest);
 
 // ✅ Get My Team (by contest)
 teamRouter.get("/my-team/:contestId", getMyTeam);

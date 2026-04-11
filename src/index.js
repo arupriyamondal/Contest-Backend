@@ -13,6 +13,7 @@ import resultRouter from "./routers/result.routes.js";
 import teamRouter from "./routers/team.routes.js";
 import fs from "fs";
 import path from "path";
+import inviterouter from "./routers/invite.routes.js";
 
 const uploadDir = path.join(process.cwd(), "uploads");
 
@@ -63,6 +64,7 @@ app.get("/", (req, res) => {
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/contest", contestrouter);
 app.use("/api/v1/result",resultRouter)
+app.use("/api/v1/invite",inviterouter)
 app.use("/api/v1/team",teamRouter)
 app.use(errorMiddleware);
 

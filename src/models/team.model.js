@@ -14,44 +14,24 @@ const teamSchema = new Schema(
       required: true,
     },
 
-    members: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-    ],
-
     leader: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    approvalStatus: {
-      type: String,
-      enum: ["Pending", "Approved", "Rejected"],
-      default: "Pending",
-    },
-    invitedUsers: [
+
+    members: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
       },
     ],
 
-    joinRequests: [
-      {
-        user: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-        },
-        status: {
-          type: String,
-          enum: ["Pending", "Accepted", "Rejected"],
-          default: "Pending",
-        },
-      },
-    ],
+    approvalStatus: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
+    },
 
     joinCode: {
       type: String,
@@ -59,7 +39,6 @@ const teamSchema = new Schema(
       sparse: true,
     },
 
-    // ✅ Submission fields
     submissionLink: {
       type: String,
       trim: true,
@@ -75,23 +54,20 @@ const teamSchema = new Schema(
   { timestamps: true }
 );
 
-// ✅ FIXED VALIDATION
+// ✅ FIXED HOOK
 teamSchema.pre("save", async function () {
-
-  if (this.members.length > 3) {
-    throw new Error("Team cannot have more than 3 members");
+  if (!this.members.some(id => id.toString() === this.leader.toString())) {
+    this.members.push(this.leader);
   }
 
-  // Auto update submission status
-  if (this.submissionLink) {
-    this.submissionStatus = "Submitted";
-  } else {
-    this.submissionStatus = "Pending";
+  const contest = await mongoose.model("Contest").findById(this.contest);
+
+  if (contest && this.members.length > contest.teamSize) {
+    throw new Error(`Team can have max ${contest.teamSize} members`);
   }
+
+  this.submissionStatus = this.submissionLink ? "Submitted" : "Pending";
 });
-
-// ✅ Prevent duplicate participation
-teamSchema.index({ contest: 1, members: 1 }, { unique: true });
 
 const Team = model("Team", teamSchema);
 
