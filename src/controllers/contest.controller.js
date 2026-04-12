@@ -3,6 +3,7 @@ import ApiError from "../utils/apierror.js";
 import ApiResponse from "../utils/apiresponse.js";
 import asyncHandler from "../utils/asynchandler.js";
 
+
 // ✅ CREATE CONTEST
 export const addContest = asyncHandler(async (req, res) => {
   const {
@@ -47,7 +48,7 @@ export const addContest = asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(
       400,
-      "Team size must be at least 2 for team/both projects",
+      "Team size must be at least 2 for team/both projects"
     );
   }
 
@@ -68,6 +69,7 @@ export const addContest = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, contest, "Contest created successfully"));
 });
 
+
 // ➤ GET ALL CONTESTS
 export const getAllContests = asyncHandler(async (req, res) => {
   const contests = await Contest.find().sort({ createdAt: -1 });
@@ -84,7 +86,7 @@ export const getAllContests = asyncHandler(async (req, res) => {
         await contest.save();
       }
       return contest;
-    }),
+    })
   );
 
   const total = await Contest.countDocuments();
@@ -96,10 +98,11 @@ export const getAllContests = asyncHandler(async (req, res) => {
         total,
         contests: updatedContests,
       },
-      "All contests fetched successfully",
-    ),
+      "All contests fetched successfully"
+    )
   );
 });
+
 
 // ➤ UPDATE CONTEST
 export const updateContestStatus = asyncHandler(async (req, res) => {
@@ -137,7 +140,7 @@ export const updateContestStatus = asyncHandler(async (req, res) => {
       if (!teamSize || teamSize < 2) {
         throw new ApiError(
           400,
-          "Team size must be at least 2 for team/both projects",
+          "Team size must be at least 2 for team/both projects"
         );
       }
       contest.teamSize = teamSize;
@@ -152,6 +155,7 @@ export const updateContestStatus = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, contest, "Contest updated successfully"));
 });
+
 
 // ➤ DELETE CONTEST
 export const deleteContest = asyncHandler(async (req, res) => {

@@ -292,25 +292,33 @@ export const deleteTeamByUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "Team deleted successfully"));
 });
 
-export const getContestParticipants = asyncHandler(async (req, res) => {
-  const { contestId } = req.params;
+export const getUserParticipatedContests = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
 
-  const contest = await Contest.findById(contestId);
-  if (!contest) throw new ApiError(404, "Contest not found");
+  // 🔍 Find teams where user is leader or member
+  const teams = await Team.find({
+    $or: [
+      { leader: userId },
+      { members: userId }
+    ],
+  })
+    .populate("contest", "contestTitle category status contestDeadLine")
+    .select("teamName contest submissionStatus approvalStatus");
 
-  const teams = await Team.find({ contest: contestId })
-    .populate("leader", "userName email")
-    .populate("members", "userName email");
+  if (!teams.length) {
+    return res.status(200).json(
+      new ApiResponse(200, [], "User has not participated in any contest")
+    );
+  }
 
   return res.status(200).json(
     new ApiResponse(
       200,
       {
-        contest: contest.contestTitle,
-        totalTeams: teams.length,
-        teams,
+        totalContests: teams.length,
+        participatedContests: teams,
       },
-      "Contest participants fetched"
+      "User participated contests fetched successfully"
     )
   );
 });
