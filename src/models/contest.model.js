@@ -8,42 +8,60 @@ const contestSchema = new Schema(
       unique: true,
       trim: true,
     },
+
     contestDescription: {
       type: String,
       required: true,
       trim: true,
     },
+
     projectBriefing: {
       type: String,
       required: true,
       trim: true,
     },
+
     contestDeadLine: {
       type: Date,
     },
+
     status: {
       type: String,
       enum: ["Upcoming", "On-Going", "Completed"],
       default: "Upcoming",
     },
+
     category: {
       type: String,
-      enum: ["MERN", "UI/UX DESIGN", "DIGITAL MARKETING","WEBSITE DESIGNING"],
+      enum: ["MERN", "UI/UX DESIGN", "DIGITAL MARKETING", "WEBSITE DESIGNING"],
       required: true,
     },
+
     entryLimit: {
       type: Number,
     },
 
-    // ✅ New fields
     projectType: {
       type: String,
-      enum: ["Individual","Team","Both"],
+      enum: ["Individual", "Team", "Both"],
       required: true,
     },
+
     teamSize: {
-      type: Number, // Max number of members for team projects
+      type: Number,
       default: 1,
+    },
+
+    // ✅ NEW: Contest Image (Cloudinary)
+    contestImage: {
+      url: {
+        type: String,
+        default: "",
+      },
+      public_id: {
+        type: String,
+        default: "",
+      },
     },
   },
   { timestamps: true }
