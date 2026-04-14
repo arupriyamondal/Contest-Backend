@@ -5,6 +5,7 @@ import {
   getAllContests,
   updateContestImage,
   updateContestStatus,
+  updateContestPDF, // ✅ NEW
 } from "../controllers/contest.controller.js";
 
 import { verifyJWT } from "../middlewares/verifyJwt.js";
@@ -13,26 +14,45 @@ import { upload } from "../middlewares/multer.js";
 
 const contestrouter = Router();
 
-// ➤ Add Contest
+
+// ➤ Add Contest (Image + PDF + ruleSections)
 contestrouter.post(
   "/add-contest",
-  upload.single("contestImage"), // ✅ AFTER auth
+  verifyJWT,
+  isAdmin,
+  upload.fields([
+    { name: "image", maxCount: 1 }, // ✅ match controller
+    { name: "pdf", maxCount: 1 },   // ✅ NEW
+  ]),
   addContest
 );
 
+
 // ➤ Get All Contests (Admin)
-contestrouter.get("/all-contests", verifyJWT, isAdmin, getAllContests);
+contestrouter.get(
+  "/all-contests",
+  verifyJWT,
+  isAdmin,
+  getAllContests
+);
+
 
 // ➤ Get Contests (Student/User)
-contestrouter.get("/stu-contest", verifyJWT, getAllContests);
+contestrouter.get(
+  "/stu-contest",
+  verifyJWT,
+  getAllContests
+);
 
-// ➤ Update Contest Status
+
+// ➤ Update Contest Status + Rule Sections
 contestrouter.patch(
   "/update-status/:contestId",
   verifyJWT,
   isAdmin,
   updateContestStatus
 );
+
 
 // ➤ Update Contest Image
 contestrouter.put(
@@ -42,6 +62,17 @@ contestrouter.put(
   upload.single("contestImage"),
   updateContestImage
 );
+
+
+// ➤ ✅ NEW: Update Contest PDF
+contestrouter.put(
+  "/update-contest-pdf/:contestId",
+  verifyJWT,
+  isAdmin,
+  upload.single("pdf"),
+  updateContestPDF
+);
+
 
 // ➤ Delete Contest
 contestrouter.delete(

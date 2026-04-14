@@ -52,7 +52,7 @@ const contestSchema = new Schema(
       default: 1,
     },
 
-    // ✅ NEW: Contest Image (Cloudinary)
+    // ✅ Contest Image (Cloudinary)
     contestImage: {
       url: {
         type: String,
@@ -63,6 +63,39 @@ const contestSchema = new Schema(
         default: "",
       },
     },
+
+    // ✅ Contest PDF (Cloudinary)
+    contestPDF: {
+      url: {
+        type: String,
+        default: "",
+      },
+      public_id: {
+        type: String,
+        default: "",
+      },
+      fileName: {
+        type: String,
+        default: "",
+      },
+    },
+
+    // ✅ ONLY Rule Sections (No simple rules array)
+    ruleSections: [
+      {
+        title: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        points: [
+          {
+            type: String,
+            trim: true,
+          },
+        ],
+      },
+    ],
   },
   { timestamps: true }
 );
