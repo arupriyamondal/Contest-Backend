@@ -29,7 +29,7 @@ const PORT = process.env.PORT || 3000;
 
 // ✅ Allowed origins
 const allowedOrigins = [
-  "https://contest-koushik-arupriya.vercel.app",
+  "https://desunlearnandearncontest-koushik-arupriya.vercel.app",
   "http://localhost:5173",
 ];
 
