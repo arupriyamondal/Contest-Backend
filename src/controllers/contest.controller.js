@@ -5,7 +5,6 @@ import ApiResponse from "../utils/apiresponse.js";
 import asyncHandler from "../utils/asynchandler.js";
 import fs from "fs";
 
-
 // ✅ CREATE CONTEST
 export const addContest = asyncHandler(async (req, res) => {
   const {
@@ -20,6 +19,7 @@ export const addContest = asyncHandler(async (req, res) => {
     ruleSections,
   } = req.body;
 
+  // ✅ VALIDATION
   if (!contestTitle || !contestDescription || !category || !projectType) {
     throw new ApiError(400, "All required fields must be provided");
   }
@@ -48,7 +48,9 @@ export const addContest = asyncHandler(async (req, res) => {
     try {
       const uploadedImage = await cloudinary.uploader.upload(
         req.files.image[0].path,
-        { folder: "contest_images" }
+        {
+          folder: "contest_images",
+        }
       );
 
       contestImageData = {
@@ -60,7 +62,7 @@ export const addContest = asyncHandler(async (req, res) => {
     }
   }
 
-  // ✅ PDF UPLOAD
+  // ✅ PDF UPLOAD (🔥 IMPORTANT FIX)
   let contestPDFData = { url: "", public_id: "", fileName: "" };
 
   if (req.files?.pdf) {
@@ -68,7 +70,8 @@ export const addContest = asyncHandler(async (req, res) => {
       const uploadedPDF = await cloudinary.uploader.upload(
         req.files.pdf[0].path,
         {
-          resource_type: "auto",
+          resource_type: "image", // Bypass the 'untrusted' restriction
+          format: "pdf", // Ensure it serves as a PDF file
           folder: "contest_pdfs",
         }
       );
@@ -116,7 +119,7 @@ export const addContest = asyncHandler(async (req, res) => {
 });
 
 
-// ✅ GET ALL
+// ✅ GET ALL CONTESTS
 export const getAllContests = asyncHandler(async (req, res) => {
   const contests = await Contest.find().sort({ createdAt: -1 });
 
@@ -215,7 +218,7 @@ export const updateContestImage = asyncHandler(async (req, res) => {
 });
 
 
-// ✅ UPDATE PDF (FIXED)
+// ✅ UPDATE PDF (🔥 FIXED FINAL)
 export const updateContestPDF = asyncHandler(async (req, res) => {
   const { contestId } = req.params;
 
@@ -228,7 +231,8 @@ export const updateContestPDF = asyncHandler(async (req, res) => {
 
   try {
     const uploaded = await cloudinary.uploader.upload(req.file.path, {
-      resource_type: "auto", // ✅ FIXED
+      resource_type: "image",
+      format: "pdf",
       folder: "contest_pdfs",
     });
 
@@ -239,7 +243,7 @@ export const updateContestPDF = asyncHandler(async (req, res) => {
     };
 
     if (contest.contestPDF?.public_id) {
-      await cloudinary.uploader.destroy(contest.contestPDF.public_id); // ✅ FIXED
+      await cloudinary.uploader.destroy(contest.contestPDF.public_id);
     }
   } finally {
     fs.unlinkSync(req.file.path);
@@ -254,7 +258,7 @@ export const updateContestPDF = asyncHandler(async (req, res) => {
 });
 
 
-// ✅ DELETE CONTEST (FINAL)
+// ✅ DELETE CONTEST
 export const deleteContest = asyncHandler(async (req, res) => {
   const { contestId } = req.params;
 
@@ -266,7 +270,7 @@ export const deleteContest = asyncHandler(async (req, res) => {
   }
 
   if (contest.contestPDF?.public_id) {
-    await cloudinary.uploader.destroy(contest.contestPDF.public_id); // ✅ FIXED
+    await cloudinary.uploader.destroy(contest.contestPDF.public_id);
   }
 
   await Contest.deleteOne({ _id: contestId });

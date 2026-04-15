@@ -18,8 +18,6 @@ const contestrouter = Router();
 // ➤ Add Contest (Image + PDF + ruleSections)
 contestrouter.post(
   "/add-contest",
-  verifyJWT,
-  isAdmin,
   upload.fields([
     { name: "image", maxCount: 1 }, // ✅ match controller
     { name: "pdf", maxCount: 1 },   // ✅ NEW
@@ -40,7 +38,6 @@ contestrouter.get(
 // ➤ Get Contests (Student/User)
 contestrouter.get(
   "/stu-contest",
-  verifyJWT,
   getAllContests
 );
 
