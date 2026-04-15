@@ -15,12 +15,6 @@ const contestSchema = new Schema(
       trim: true,
     },
 
-    projectBriefing: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
     contestDeadLine: {
       type: Date,
     },
@@ -52,35 +46,20 @@ const contestSchema = new Schema(
       default: 1,
     },
 
-    // ✅ Contest Image (Cloudinary)
+    // ✅ Contest Image
     contestImage: {
-      url: {
-        type: String,
-        default: "",
-      },
-      public_id: {
-        type: String,
-        default: "",
-      },
+      url: { type: String, default: "" },
+      public_id: { type: String, default: "" },
     },
 
-    // ✅ Contest PDF (Cloudinary)
+    // ✅ Contest PDF
     contestPDF: {
-      url: {
-        type: String,
-        default: "",
-      },
-      public_id: {
-        type: String,
-        default: "",
-      },
-      fileName: {
-        type: String,
-        default: "",
-      },
+      url: { type: String, default: "" },
+      public_id: { type: String, default: "" },
+      fileName: { type: String, default: "" },
     },
 
-    // ✅ ONLY Rule Sections (No simple rules array)
+    // ✅ Rule Sections
     ruleSections: [
       {
         title: {
