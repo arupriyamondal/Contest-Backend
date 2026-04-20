@@ -161,8 +161,12 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 // 🔹 LOGOUT USER
+// 🔹 LOGOUT USER
 const logoutUser = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies?.refreshToken;
+  // ✅ Fallback to Authorization header if browser blocks cookies
+  const refreshToken = 
+    req.cookies?.refreshToken || 
+    req.header("Authorization")?.replace("Bearer ", "");
 
   if (refreshToken) {
     await User.findOneAndUpdate({ refreshToken }, { refreshToken: null });
@@ -179,7 +183,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, null, "Logout successful"));
-});
+}); 
+
 
 // 🔹 REFRESH ACCESS TOKEN  ← FIXED: maxAge on cookies + refreshToken in response body
 const refreshAccessToken = asyncHandler(async (req, res) => {
