@@ -146,8 +146,8 @@ export const getAllContests = asyncHandler(async (req, res) => {
 });
 
 
-// ✅ UPDATE STATUS + RULES
-export const updateContestStatus = asyncHandler(async (req, res) => {
+// ✅ UPDATE CONTEST (STATUS + TYPE + RULES)
+export const updateContest = asyncHandler(async (req, res) => {
   const { contestId } = req.params;
   const { status, projectType, teamSize, ruleSections } = req.body;
 

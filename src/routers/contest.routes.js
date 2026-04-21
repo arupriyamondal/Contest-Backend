@@ -4,7 +4,7 @@ import {
   deleteContest,
   getAllContests,
   updateContestImage,
-  updateContestStatus,
+  updateContest,
   updateContestPDF, // ✅ NEW
 } from "../controllers/contest.controller.js";
 
@@ -45,12 +45,12 @@ contestrouter.get(
 );
 
 
-// ➤ Update Contest Status + Rule Sections
+// ➤ Update Contest (Status, Project Type, etc.)
 contestrouter.patch(
-  "/update-status/:contestId",
+  "/update-contest/:contestId",
   verifyJWT,
   isAdmin,
-  updateContestStatus
+  updateContest
 );
 
 
