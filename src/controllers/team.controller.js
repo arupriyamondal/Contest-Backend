@@ -22,10 +22,12 @@ export const createTeam = asyncHandler(async (req, res) => {
   const contest = await Contest.findById(contestId);
   if (!contest) throw new ApiError(404, "Contest not found");
 
-  // ❗ NEW CHECK
+  // ❗ REMOVED BLOCK: Allow Individual participation in createTeam flow
+  /*
   if (contest.projectType === "Individual") {
     throw new ApiError(400, "This contest only allows individual participation");
   }
+  */
 
   const user = await User.findOne({ email: userEmail });
   if (!user) throw new ApiError(404, "User not found");
@@ -170,10 +172,12 @@ export const addSubmission = asyncHandler(async (req, res) => {
     const contest = await Contest.findById(team.contest);
     if (!contest) throw new ApiError(404, "Contest not found");
 
-    // ❌ Block if only Individual allowed
+    // ✅ Allow both Team and Individual submissions through the team flow
+    /* 
     if (contest.projectType === "Individual") {
       throw new ApiError(400, "Team submission not allowed for this contest");
     }
+    */
 
     // ✅ Check membership
     const isMember = team.members.some(
