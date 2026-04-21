@@ -71,14 +71,27 @@ export const getMyTeam = asyncHandler(async (req, res) => {
     .populate("members", "userName email")
     .populate("leader", "userName email");
 
+  if (!team) {
+    return res.status(200).json(new ApiResponse(200, null, "No team found"));
+  }
+
+  // 🔥 Fetch join requests for this team
+  const joinRequests = await Invite.find({
+    team: team._id,
+    actionType: "JOIN_REQUEST",
+    status: "Pending"
+  }).populate("sender", "userName email");
+
+  const teamData = {
+    ...team.toObject(),
+    joinRequests
+  };
+
   return res.status(200).json(
-    new ApiResponse(
-      200,
-      team || null,
-      team ? "Team fetched" : "No team found"
-    )
+    new ApiResponse(200, teamData, "Team fetched")
   );
 });
+
 // ✅ GET TEAM DETAILS
 export const getTeamDetails = asyncHandler(async (req, res) => {
   const { teamId } = req.params;
@@ -89,9 +102,21 @@ export const getTeamDetails = asyncHandler(async (req, res) => {
 
   if (!team) throw new ApiError(404, "Team not found");
 
+  // 🔥 Fetch join requests for this team
+  const joinRequests = await Invite.find({
+    team: team._id,
+    actionType: "JOIN_REQUEST",
+    status: "Pending"
+  }).populate("sender", "userName email");
+
+  const teamData = {
+    ...team.toObject(),
+    joinRequests
+  };
+
   return res
     .status(200)
-    .json(new ApiResponse(200, team, "Team details fetched"));
+    .json(new ApiResponse(200, teamData, "Team details fetched"));
 });
 
 // ✅ VIEW ALL TEAMS
