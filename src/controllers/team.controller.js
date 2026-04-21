@@ -149,14 +149,20 @@ export const deleteTeam = asyncHandler(async (req, res) => {
 // ✅ ADD SUBMISSION
 export const addSubmission = asyncHandler(async (req, res) => {
   const userEmail = req.user.email;
-  const { teamId, link } = req.body;
+  const { teamId, link, contestId } = req.body;
 
-  if (!link) throw new ApiError(400, "Submission link is required");
+  if (!link) {
+    throw new ApiError(400, "Submission link is required");
+  }
 
   const user = await User.findOne({ email: userEmail });
-  if (!user) throw new ApiError(404, "User not found");
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
-  // ❗ CASE 1: TEAM SUBMISSION
+  // ============================
+  // ✅ CASE 1: TEAM SUBMISSION
+  // ============================
   if (teamId) {
     const team = await Team.findById(teamId);
     if (!team) throw new ApiError(404, "Team not found");
@@ -164,10 +170,12 @@ export const addSubmission = asyncHandler(async (req, res) => {
     const contest = await Contest.findById(team.contest);
     if (!contest) throw new ApiError(404, "Contest not found");
 
+    // ❌ Block if only Individual allowed
     if (contest.projectType === "Individual") {
-      throw new ApiError(400, "This contest only allows individual submission");
+      throw new ApiError(400, "Team submission not allowed for this contest");
     }
 
+    // ✅ Check membership
     const isMember = team.members.some(
       (id) => id.toString() === user._id.toString()
     );
@@ -176,52 +184,77 @@ export const addSubmission = asyncHandler(async (req, res) => {
       throw new ApiError(403, "Only team members can submit");
     }
 
+    // ✅ Check team size
     if (team.members.length !== Number(contest.teamSize)) {
-      throw new ApiError(400, `Team must have ${contest.teamSize} members`);
+      throw new ApiError(
+        400,
+        `Team must have exactly ${contest.teamSize} members`
+      );
     }
 
+    // ❌ Already submitted
     if (team.submissionStatus === "Submitted") {
-      throw new ApiError(400, "Already submitted");
+      throw new ApiError(400, "Team already submitted");
     }
 
+    // ❌ Not approved
     if (team.approvalStatus !== "Approved") {
-      throw new ApiError(403, "Team not approved");
+      throw new ApiError(403, "Team not approved yet");
     }
 
+    // ✅ Save submission
     team.submissionLink = link;
     team.submissionStatus = "Submitted";
 
     await team.save();
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, team, "Team submission successful"));
+    return res.status(200).json(
+      new ApiResponse(200, team, "Team submission successful")
+    );
   }
 
-  // ❗ CASE 2: INDIVIDUAL SUBMISSION
+  // ===============================
+  // ✅ CASE 2: INDIVIDUAL SUBMISSION
+  // ===============================
   else {
-    const contest = await Contest.findOne({
-      _id: req.body.contestId,
-    });
-
-    if (!contest) throw new ApiError(404, "Contest not found");
-
-    if (contest.projectType === "Team") {
-      throw new ApiError(400, "This contest only allows team submission");
+    if (!contestId) {
+      throw new ApiError(400, "contestId is required for individual submission");
     }
 
-    // ❗ Prevent duplicate individual submission
-    const existingTeam = await Team.findOne({
+    const contest = await Contest.findById(contestId);
+    if (!contest) throw new ApiError(404, "Contest not found");
+
+    // ❌ Block if only Team allowed
+    if (contest.projectType === "Team") {
+      throw new ApiError(400, "Individual submission not allowed for this contest");
+    }
+
+    // ❌ Check if already submitted individually
+    const existingIndividual = await Team.findOne({
       contest: contest._id,
       leader: user._id,
+      members: { $size: 1 }, // 👈 important (only individual)
       submissionStatus: "Submitted",
     });
 
-    if (existingTeam) {
+    if (existingIndividual) {
       throw new ApiError(400, "Already submitted individually");
     }
 
-    // ✅ Create virtual "team" for individual
+    // ❌ Optional: Prevent submitting both team + individual (REMOVE if you want both allowed)
+    /*
+    const existingTeamSubmission = await Team.findOne({
+      contest: contest._id,
+      members: user._id,
+      submissionStatus: "Submitted",
+    });
+
+    if (existingTeamSubmission) {
+      throw new ApiError(400, "Already submitted as part of a team");
+    }
+    */
+
+    // ✅ Create "virtual team" for individual
     const team = await Team.create({
       teamName: `${user.userName}-individual`,
       contest: contest._id,
@@ -232,9 +265,9 @@ export const addSubmission = asyncHandler(async (req, res) => {
       approvalStatus: "Approved",
     });
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, team, "Individual submission successful"));
+    return res.status(200).json(
+      new ApiResponse(200, team, "Individual submission successful")
+    );
   }
 });
 
