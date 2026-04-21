@@ -188,12 +188,22 @@ export const addSubmission = asyncHandler(async (req, res) => {
       throw new ApiError(403, "Only team members can submit");
     }
 
-    // ✅ Check team size
-    if (team.members.length !== Number(contest.teamSize)) {
-      throw new ApiError(
-        400,
-        `Team must have exactly ${contest.teamSize} members`
-      );
+    // ✅ Flexible team size check based on project type
+    const currentTeamSize = team.members.length;
+    const requiredTeamSize = Number(contest.teamSize);
+
+    if (contest.projectType === "Individual") {
+      if (currentTeamSize !== 1) {
+        throw new ApiError(400, "Individual participation only allows 1 member");
+      }
+    } else if (contest.projectType === "Team") {
+      if (currentTeamSize !== requiredTeamSize) {
+        throw new ApiError(400, `Team must have exactly ${requiredTeamSize} members`);
+      }
+    } else if (contest.projectType === "Both") {
+      if (currentTeamSize !== 1 && currentTeamSize !== requiredTeamSize) {
+        throw new ApiError(400, `Submission must be Solo or a Team of exactly ${requiredTeamSize} members`);
+      }
     }
 
     // ❌ Already submitted
