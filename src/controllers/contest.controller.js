@@ -154,14 +154,37 @@ export const updateContestStatus = asyncHandler(async (req, res) => {
   const contest = await Contest.findById(contestId);
   if (!contest) throw new ApiError(404, "Contest not found");
 
-  if (status) contest.status = status;
-
-  if (projectType) {
-    contest.projectType = projectType;
-    contest.teamSize =
-      projectType === "Individual" ? 1 : teamSize || contest.teamSize;
+  // ✅ STATUS UPDATE
+  if (status) {
+    const validStatus = ["Upcoming", "Ongoing", "Completed"];
+    if (!validStatus.includes(status)) {
+      throw new ApiError(400, "Invalid status value");
+    }
+    contest.status = status;
   }
 
+  // ✅ PROJECT TYPE UPDATE WITH VALIDATION
+  if (projectType) {
+    const validProjectType = ["Individual", "Team", "Both"];
+
+    if (!validProjectType.includes(projectType)) {
+      throw new ApiError(400, "Invalid project type");
+    }
+
+    contest.projectType = projectType;
+
+    // ✅ TEAM SIZE LOGIC
+    if (projectType === "Individual") {
+      contest.teamSize = 1;
+    } else {
+      if (!teamSize || teamSize < 2) {
+        throw new ApiError(400, "Team size must be at least 2");
+      }
+      contest.teamSize = teamSize;
+    }
+  }
+
+  // ✅ RULES UPDATE
   if (ruleSections) {
     try {
       contest.ruleSections =
@@ -177,7 +200,7 @@ export const updateContestStatus = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, contest, "Updated"));
+    .json(new ApiResponse(200, contest, "Updated successfully"));
 });
 
 
