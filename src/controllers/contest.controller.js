@@ -156,7 +156,7 @@ export const updateContest = asyncHandler(async (req, res) => {
 
   // ✅ STATUS UPDATE
   if (status) {
-    const validStatus = ["Upcoming", "Ongoing", "Completed"];
+    const validStatus = ["Upcoming", "On-Going", "Completed"];
     if (!validStatus.includes(status)) {
       throw new ApiError(400, "Invalid status value");
     }
@@ -177,10 +177,11 @@ export const updateContest = asyncHandler(async (req, res) => {
     if (projectType === "Individual") {
       contest.teamSize = 1;
     } else {
-      if (!teamSize || teamSize < 2) {
-        throw new ApiError(400, "Team size must be at least 2");
+      const effectiveTeamSize = teamSize || contest.teamSize;
+      if (!effectiveTeamSize || effectiveTeamSize < 2) {
+        throw new ApiError(400, "Team size must be at least 2 for Teams/Both");
       }
-      contest.teamSize = teamSize;
+      contest.teamSize = effectiveTeamSize;
     }
   }
 
