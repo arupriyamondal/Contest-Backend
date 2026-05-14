@@ -119,9 +119,9 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!user) throw new ApiError(404, "User not found");
 
   // ✅ 🔥 CHECK EMAIL VERIFIED (IMPORTANT)
-  if (!user.isEmailVerified) {
-    throw new ApiError(403, "Please verify your email before logging in");
-  }
+  // if (!user.isEmailVerified) {
+  //   throw new ApiError(403, "Please verify your email before logging in");
+  // }
 
   const isPasswordCorrect = await user.isPasswordCorrect(password);
   if (!isPasswordCorrect) throw new ApiError(401, "Invalid credentials");
